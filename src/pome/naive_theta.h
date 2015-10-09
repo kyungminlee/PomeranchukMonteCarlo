@@ -4,7 +4,6 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
-#include <array>
 
 inline
 std::complex<double> naive_theta1(std::complex<double> tau, std::complex<double> z)

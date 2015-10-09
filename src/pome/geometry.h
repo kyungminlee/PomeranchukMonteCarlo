@@ -29,12 +29,13 @@ private:
   Real inverse_kappa_;
   Integer n_flux_;
   Complex theta1_prime_; // theta1'(0) = theta2(0) * theta3(0) * theta4(0)
+  Complex inverse_theta1_prime_;
 
   kore::array::Array<Complex, 1> inverse_lattice_basis_;
   kore::array::Array<Complex, 2> displacements_;
 
-  Real reference_k_;  //!< ala Haldane and Rezayi, PRB 31, 2529 (1985)
-  Real reference_z0_; //!< ala Haldane and Rezayi, PRB 31, 2529 (1985)
+  //Real reference_k_;  //!< ala Haldane and Rezayi, PRB 31, 2529 (1985)
+  //Real reference_z0_; //!< ala Haldane and Rezayi, PRB 31, 2529 (1985)
                       // Cache Objects
   EllipticTheta1<Real> theta1_function_;
   EllipticTheta2<Real> theta2_function_;
@@ -62,7 +63,8 @@ public:
   Complex theta2(Complex z) const { return theta2_function_(z); } //!< \f$\vartheta_{2}(z|\tau)\f$
   Complex theta3(Complex z) const { return theta3_function_(z); } //!< \f$\vartheta_{3}(z|\tau)\f$
   Complex theta4(Complex z) const { return theta4_function_(z); } //!< \f$\vartheta_{4}(z|\tau)\f$
-  Complex theta1_prime() const { return theta1_prime_; }          //!< \f$\vartheta_{1}'(z|\tau)\f$
+  Complex theta1_prime() const { return theta1_prime_; }          //!< \f$\vartheta_{1}'(0|\tau)\f$
+  Complex inverse_theta1_prime() const { return inverse_theta1_prime_; }          //!< \f$1/\vartheta_{1}'(0|\tau)\f$
   //@}
 
 public:

@@ -13,13 +13,15 @@ Geometry::Geometry(Real ell1, Real ell2, Real angle)
   , i_pi_tau_(-tau_.imag() * M_PI, tau_.real() * M_PI)
   , kappa_(M_PI / ell1)
   , inverse_kappa_(1.0 / kappa_)
+  , n_flux_(0)
+  , theta1_prime_(0.0, 0.0)
+  , inverse_theta1_prime_(0.0, 0.0)
   , inverse_lattice_basis_(2)
+  , displacements_(0u)
   , theta1_function_(tau_)
   , theta2_function_(tau_)
   , theta3_function_(tau_)
   , theta4_function_(tau_)
-  , theta1_prime_(0.0, 0.0)
-  , displacements_(0)
 {
   assert(ell1 > 0);
   assert(ell2 > 0);
@@ -37,6 +39,7 @@ Geometry::Geometry(Real ell1, Real ell2, Real angle)
 
   Complex zero(0.0, 0.0);
   theta1_prime_ = theta2(zero) * theta3(zero) * theta4(zero);
+  inverse_theta1_prime_ = 1.0 / theta1_prime_;
 
   // L = | L1x  L2x |
   //     | L1y  L2y |
@@ -55,8 +58,8 @@ Geometry::Geometry(Real ell1, Real ell2, Real angle)
   inverse_lattice_basis_(1) = Complex(inverse_lattice(1, 0), inverse_lattice(1, 1));
 
   // TODO: fix this
-  reference_k_ = 0.0;
-  reference_z0_ = 0.0;
+  //reference_k_ = 0.0;
+  //reference_z0_ = 0.0;
   init_displacements();
 }
 
@@ -121,11 +124,15 @@ Geometry::mod_z(Complex z) const {
 inline Complex
 Geometry::mod_kappa_z(Complex z) const {
   z /= M_PI;
+  //z += (1.0 + tau_) * 0.5;
   Real y_cell = ::floor(z.imag() / tau_.imag() + 1E-15);
   z -= y_cell * tau_;
   Real offset = z.imag() * tau_.real() / tau_.imag();
   Real x_cell = ::floor(z.real() - offset + 1E-15);
-  return Complex(M_PI * (z.real() - x_cell), M_PI * z.imag());
+  z = Complex((z.real() - x_cell), z.imag());
+  //z -= (1.0 + tau_) * 0.5;
+  z *= M_PI;
+  return z;
 }
 
 
@@ -139,7 +146,7 @@ Geometry::init_displacements()
   for (Integer i1 = 0; i1 < n_flux_; ++i1) {
     for (Integer i2 = 0; i2 < n_flux_; ++i2) {
       dvectors(i1, i2) = a1 * static_cast<Real>(i1) + a2 * static_cast<Real>(i2);
-      assert(is_valid_momentum(dvectors(i1, i2)));
+      assert(is_valid_displacement(dvectors(i1, i2))); // TODO: fix
     }
   }
   displacements_ = std::move(dvectors);

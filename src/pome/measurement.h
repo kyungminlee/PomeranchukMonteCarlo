@@ -52,7 +52,7 @@ public:
 
   void measure_structure_factor(kore::array::Array<Complex const ,1> const & coordinates)
   {
-    static const Complex C_ZERO(0.0, 0.0);
+    //static const Complex C_ZERO(0.0, 0.0);
     kore::array::Array<Complex, 1> zs = coordinates.clone();
     zs /= geometry_.kappa();
 
@@ -61,7 +61,8 @@ public:
 
     auto ne = wavefunction_.n_electron();
     for (Integer i = 0, n = momentums_.size(); i < n; ++i) {
-      auto r = rows_[i]; auto c = cols_[i]; auto q = momentums_[i];
+      //auto r = rows_[i]; auto c = cols_[i]; 
+      auto q = momentums_[i];
       structure_factors_[i] = 0.0;
 
       for (Integer i_elec = 0; i_elec < ne; ++i_elec) {

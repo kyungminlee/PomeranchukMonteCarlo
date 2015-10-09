@@ -8,7 +8,7 @@ class MonteCarloManager;
 class MonteCarloStat
 {
 public:
-  MonteCarloStat(bool keep_track)
+  explicit MonteCarloStat(bool keep_track)
     : keep_track_(keep_track)
     , n_accept_(0), n_reject_(0)
   { }
@@ -63,11 +63,11 @@ public:
     , state_(state)
     , cache_(cache)
     , update_opt_(update_opt)
-    , random_generator_(gen)
-    , real_dist_(0.0, 1.0)
+    , measurement_(measurement)
     , stat_(keep_track)
     , tolerance_(tolerance)
-    , measurement_(measurement)
+    , random_generator_(gen)
+    , real_dist_(0.0, 1.0)
   {
     assert(tolerance > 0);
   }
@@ -75,16 +75,14 @@ public:
   void step(bool measure)
   {
     UpdateType update = system_.candidate(state_, cache_, update_opt_, random_generator_);
+    //std::cout << update.i_electron << "\t" << update.z_new << std::endl; 
     system_.update(update, state_, cache_);
-
     RealType p = system_.acceptance(update, state_, system_, cache_);
-
-    if (p >= 1.0) {
-      system_.commit(update, state_, cache_);      stat_.accept();
-    } else {
+    if (p >= 1.0) {  system_.commit(update, state_, cache_);      stat_.accept(); }
+    else {
       RealType p2 = real_dist_(random_generator_);
-      if (p2 > p) { system_.commit(update, state_, cache_);        stat_.accept(); }
-      else {        system_.revert(update, state_, cache_);        stat_.reject(); }
+      if (p2 <= p) { system_.commit(update, state_, cache_);      stat_.accept(); }
+      else {         system_.revert(update, state_, cache_);      stat_.reject(); }
     }
     if (measure) { measurement_.measure(state_, cache_); }
   }
@@ -102,7 +100,6 @@ public:
     } // else measure_every == 0
   }
 
-
   std::tuple<int, int> get_stat() const {
     return std::make_tuple(stat_.n_accept(), stat_.n_reject());
   }
@@ -115,9 +112,9 @@ private:
   MeasurementType & measurement_;
   MonteCarloStat stat_;
 
+  RealType tolerance_;
   std::mt19937 & random_generator_;
   std::uniform_real_distribution<double> real_dist_;
-  RealType tolerance_;
 };
 
 

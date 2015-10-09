@@ -7,7 +7,7 @@
 #include <array>
 
 //! \f$ \vartheta_1(z | \tau) \f$
-template <typename _RealType = double, size_t CacheSize = 64>
+template <typename _RealType = double, size_t CacheSize = 128>
 class EllipticTheta1
 {
 public:
@@ -40,7 +40,7 @@ public:
     ComplexType z1(std::imag(z), -std::real(z)); // = -I * z
     ComplexType z2 = -z1;
 
-    for (int i = 0; i < CacheSize; ++i) {
+    for (size_t i = 0; i < CacheSize; ++i) {
       ComplexType foo = cache_two_pi_i_tau_[i];
       z1 += foo + two_iz;
       z2 += foo - two_iz;
@@ -50,8 +50,9 @@ public:
         ComplexType(::cos(z2.imag()), ::sin(z2.imag())) * ::exp(z2.real());
       //theta += (i % 2 == 0) ? -next_term : next_term;
       theta += (i % 2) ? next_term : -next_term;
-      if (::fabs(next_term.real()) + ::fabs(next_term.imag()) < 1E-15) { break; } // faster than std::abs
-                                                                                  //if (std::abs(next_term) < 1E-15) { break; }
+      if (::fabs(next_term.real()) + ::fabs(next_term.imag()) < 1E-15) { break; } 
+      // faster than std::abs                                                                           
+      //if (std::abs(next_term) < 1E-15) { break; }
     }
     theta *= overall_factor_;
     return theta;
@@ -88,7 +89,7 @@ public:
     assert(i_pow >= 0);
     static const ComplexType I(0, 1);
     ComplexType theta = 0.0;
-    for (int i = 0; i < CacheSize; ++i) {
+    for (size_t i = 0; i < CacheSize; ++i) {
       RealType alpha = RealType(2 * i + 1);
       RealType alpha_pow = std::pow(alpha, i_pow);
       ComplexType next_term;
@@ -148,7 +149,7 @@ public:
     ComplexType z1(std::imag(z), -std::real(z)); // = -I * z
     ComplexType z2 = -z1;
 
-    for (int i = 0; i < CacheSize; ++i) {
+    for (size_t i = 0; i < CacheSize; ++i) {
       ComplexType foo = cache_two_pi_i_tau_[i];
       z1 += foo + two_iz;
       z2 += foo - two_iz;
