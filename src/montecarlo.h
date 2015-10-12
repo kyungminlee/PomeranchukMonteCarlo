@@ -23,6 +23,11 @@ public:
     if (keep_track_) { history_.push_back(false); }
   }
 
+  void clear() {
+    n_accept_ = 0;
+    n_reject_ = 0;
+  }
+
   void keep_track(bool kt) { keep_track_ = kt; }
   bool keep_track() const { return keep_track_; }
 
@@ -37,7 +42,7 @@ private:
   std::vector<bool> history_;
 };
 
-template <typename _ProblemType>
+template <typename _ProblemType, typename RNG = std::mt19937>
 class MonteCarloEngine
 {
 public:
@@ -56,7 +61,7 @@ public:
     CacheType& cache,  // state and cache changes all the time
     MeasurementType & measurement,
     const UpdateOptType& update_opt,
-    std::mt19937 & gen,
+    RNG & gen,
     bool keep_track = false,
     RealType tolerance = 1E-15)
     : system_(system)
@@ -72,10 +77,9 @@ public:
     assert(tolerance > 0);
   }
 
-  void step(bool measure)
+  void step()
   {
     UpdateType update = system_.candidate(state_, cache_, update_opt_, random_generator_);
-    //std::cout << update.i_electron << "\t" << update.z_new << std::endl; 
     system_.update(update, state_, cache_);
     RealType p = system_.acceptance(update, state_, system_, cache_);
     if (p >= 1.0) {  system_.commit(update, state_, cache_);      stat_.accept(); }
@@ -84,21 +88,42 @@ public:
       if (p2 <= p) { system_.commit(update, state_, cache_);      stat_.accept(); }
       else {         system_.revert(update, state_, cache_);      stat_.reject(); }
     }
-    if (measure) { measurement_.measure(state_, cache_); }
   }
-  
-  void run(size_t n_step, size_t measure_every)
+
+
+  void step_notrack()
+  {
+    UpdateType update = system_.candidate(state_, cache_, update_opt_, random_generator_);
+    system_.update(update, state_, cache_);
+    RealType p = system_.acceptance(update, state_, system_, cache_);
+    if (p >= 1.0) { system_.commit(update, state_, cache_); }
+    else {
+      RealType p2 = real_dist_(random_generator_);
+      if (p2 <= p) { system_.commit(update, state_, cache_);  }
+      else { system_.revert(update, state_, cache_); }
+    }
+  }
+
+
+  void run(size_t n_step, size_t measure_every = 0)
   {
     if (measure_every == 0) {
-      for (size_t i_step = 0; i_step < n_step; ++i_step) { step(false); }
+      for (size_t i_step = 0; i_step < n_step; ++i_step) { step(); }
     } // if measure_every == 0 
     else {
       for (size_t i_step = 0; i_step < n_step; ++i_step) {
-        if ((i_step + 1) % measure_every == 0) { step(true); }
-        else { step(false); }
+        if ((i_step + 1) % measure_every == 0) { step(); measurement_.measure(state_, cache_); }
+        else { step(); }
       } // for i_step
     } // else measure_every == 0
   }
+
+
+  void run_notrack(size_t n_step)
+  {
+    for (size_t i_step = 0; i_step < n_step; ++i_step) { step_notrack(); }
+  }
+
 
   std::tuple<int, int> get_stat() const {
     return std::make_tuple(stat_.n_accept(), stat_.n_reject());
@@ -113,7 +138,7 @@ private:
   MonteCarloStat stat_;
 
   RealType tolerance_;
-  std::mt19937 & random_generator_;
+  RNG & random_generator_;
   std::uniform_real_distribution<double> real_dist_;
 };
 
