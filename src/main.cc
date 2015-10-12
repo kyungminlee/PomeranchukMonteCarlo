@@ -11,6 +11,7 @@
 #include <vector>
 #include <iomanip>
 #include <chrono>
+#include <memory>
 
 #include <tclap/CmdLine.h>
 #include <yaml-cpp/yaml.h>
@@ -77,7 +78,7 @@ struct PomeranchukReader
 
   std::unique_ptr<PomeParam> read_yaml(const char* filename)
   {
-    std::unique_ptr<PomeParam> pp = std::make_unique<PomeParam>();
+    std::unique_ptr<PomeParam> pp(new PomeParam);
     try {
       PomeParam& pome_param = *pp;
 
