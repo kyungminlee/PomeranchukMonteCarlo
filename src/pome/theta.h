@@ -19,7 +19,7 @@ public:
   explicit EllipticTheta1(ComplexType tau)
     : tau_(tau)
   {
-    static const ComplexType I(0.0, 1.0);
+    static const ComplexType complex_eye(0.0, 1.0);
     RealType rtau = std::real(tau);
     //rtau = std::fmod(rtau + ::ceil(fabs(rtau))*2.0 + 1.0, 2.0) - 1.0;
     //tau_mod2_ = ComplexType(rtau, std::imag(tau_));
@@ -27,9 +27,9 @@ public:
     ComplexType foo = 0;
     for (size_t i = 0; i < CacheSize; ++i) {
       cache_two_pi_i_tau_[i] = foo;
-      foo += 2.0 * M_PI * I * tau_;
+      foo += 2.0 * M_PI * complex_eye * tau_;
     }
-    overall_factor_ = I * std::exp(0.25 * M_PI * I * tau_);
+    overall_factor_ = complex_eye * std::exp(0.25 * M_PI * complex_eye * tau_);
   }
 
   ComplexType operator()(ComplexType z) const
@@ -133,13 +133,13 @@ public:
   explicit EllipticTheta2(ComplexType tau)
     : tau_(tau)
   {
-    static const ComplexType I(0.0, 1.0);
+    static const ComplexType complex_eye(0.0, 1.0);
     ComplexType foo = 0;
     for (size_t i = 0; i < CacheSize; ++i) {
       cache_two_pi_i_tau_[i] = foo;
-      foo += 2.0 * M_PI * I * tau_;
+      foo += 2.0 * M_PI * complex_eye * tau_;
     }
-    overall_factor_ = std::exp(0.25 * M_PI * I * tau_);
+    overall_factor_ = std::exp(0.25 * M_PI * complex_eye * tau_);
   }
 
   ComplexType operator()(ComplexType z) const
@@ -184,11 +184,11 @@ public:
   explicit EllipticTheta3(ComplexType tau)
     : tau_(tau)
   {
-    static const ComplexType I(0.0, 1.0);
-    ComplexType foo = -M_PI * I * tau_;
+    static const ComplexType complex_eye(0.0, 1.0);
+    ComplexType foo = -M_PI * complex_eye * tau_;
     for (size_t i = 0; i < CacheSize; ++i) {
       cache_two_pi_i_tau_[i] = foo;
-      foo += 2.0 * M_PI * I * tau_;
+      foo += 2.0 * M_PI * complex_eye * tau_;
     }
   }
 
@@ -231,11 +231,11 @@ public:
   explicit EllipticTheta4(ComplexType tau)
     : tau_(tau)
   {
-    static const ComplexType I(0.0, 1.0);
-    ComplexType foo = -M_PI * I * tau_;
+    static const ComplexType complex_eye(0.0, 1.0);
+    ComplexType foo = -M_PI * complex_eye * tau_;
     for (size_t i = 0; i < CacheSize; ++i) {
       cache_two_pi_i_tau_[i] = foo;
-      foo += 2.0 * M_PI * I * tau_;
+      foo += 2.0 * M_PI * complex_eye * tau_;
     }
   }
 

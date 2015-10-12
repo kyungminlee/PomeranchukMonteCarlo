@@ -352,7 +352,7 @@ public:
   void generate_slater(ParticleCoordinates const & coordinates,
                        CflCache& cache) const
   {
-    static const Complex I(0.0, 1.0);
+    static const Complex complex_eye(0.0, 1.0);
     const Complex inv_kappa = geometry_.inverse_kappa();
     auto const nel = n_electron_;
     auto const & zs = coordinates; // kappa z
@@ -383,7 +383,7 @@ public:
           } // if (k != i)
         } // for k
         cache.slater(i, j)
-          = factor * std::exp( I * zs(i) * displacement_inverse_kappas_(j).imag() );
+          = factor * std::exp( complex_eye * zs(i) * displacement_inverse_kappas_(j).imag() );
       } // for j
     } // for i
     auto ldsq = kore::array::linalg::log_determinant_abs_squared(cache.slater);
