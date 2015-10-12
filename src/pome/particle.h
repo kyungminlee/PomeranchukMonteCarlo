@@ -14,11 +14,29 @@ struct ParticleMove
   Complex z_old;
 };
 
+enum class ParticleMoveStrategy { UNSET, CIRCLE, SQUARE };
+
 struct ParticleMoveOpt
 {
   Real radius;
-  explicit ParticleMoveOpt(Real r) : radius(r) { assert(r > 0); }
+  ParticleMoveStrategy strategy;
 };
+
+inline
+std::ostream& operator<<(std::ostream& os, ParticleMoveOpt opt)
+{
+  os << "ParticleMoveOpt[";
+  os << "radius=" << opt.radius;
+  os << ",strategy=";
+  switch(opt.strategy) {
+   case ParticleMoveStrategy::UNSET:  os << "unset"; break;
+   case ParticleMoveStrategy::CIRCLE: os << "circle"; break;
+   case ParticleMoveStrategy::SQUARE: os << "square"; break;
+   default: os << "error";
+  }
+  os << "]";
+  return os;
+}
 
 struct ParticleCoordinates
 {

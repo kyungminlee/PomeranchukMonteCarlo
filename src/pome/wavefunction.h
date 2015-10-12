@@ -160,11 +160,11 @@ public:
 
   //! \name MonteCarloEngine conformant functions
   //@{
-  template <typename RandGen>
+  template <typename RNG = std::mt19937>
   ParticleMove candidate(ParticleCoordinates const & coordinates,
                          CflCache const & cache,
                          ParticleMoveOpt const & opt,
-                         RandGen& gen) const
+                         RNG& gen) const
   {
     auto ie = distribution_electron_number_(gen);
     auto z_old = coordinates(ie);
