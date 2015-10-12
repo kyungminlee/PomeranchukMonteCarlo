@@ -15,4 +15,4 @@ HEADERS = \
 SOURCES = main.cc
 
 main: $(SOURCES) $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
