@@ -1,0 +1,3 @@
+CXX=icpc
+LDFLAGS=-mkl=sequential -lyaml-cpp
+CXXFLAGS=-O3 -Wall -std=c++14 -isystem$(HOME)/.local/include/eigen3 -isystem../../koretools/include -isystem$(HOME)/.local/pkg/tclap-1.2.1/include -mkl=sequential

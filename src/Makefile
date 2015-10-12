@@ -1,3 +1,5 @@
+include make.inc
+
 HEADERS = \
 	montecarlo.h \
 	pome/basics.h \
@@ -12,7 +14,5 @@ HEADERS = \
 
 SOURCES = main.cc
 
-LDFLAGS = -L$(HOME)/.brew/opt/openblas/lib -lopenblas
-CXXFLAGS = -g -Wall -std=c++11 -I$(HOME)/.brew/opt/openblas/include -I$(HOME)/.brew/include/eigen3 -I../../koretools/include -I$(HOME)/.brew/include
 main: $(SOURCES) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
