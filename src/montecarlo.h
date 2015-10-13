@@ -62,15 +62,13 @@ public:
     MeasurementType & measurement,
     const UpdateOptType& update_opt,
     RNG & gen,
-    bool keep_track = false,
-    RealType tolerance = 1E-15)
+    bool keep_track = false)
     : system_(system)
     , state_(state)
     , cache_(cache)
     , update_opt_(update_opt)
     , measurement_(measurement)
     , stat_(keep_track)
-    , tolerance_(tolerance)
     , random_generator_(gen)
     , real_dist_(0.0, 1.0)
   {
@@ -137,7 +135,6 @@ private:
   MeasurementType & measurement_;
   MonteCarloStat stat_;
 
-  RealType tolerance_;
   RNG & random_generator_;
   std::uniform_real_distribution<double> real_dist_;
 };

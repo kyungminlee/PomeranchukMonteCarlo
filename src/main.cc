@@ -237,7 +237,11 @@ int main(int argc, char** argv)
 
   Measurement measurement(geometry, wavefunction, result_table_stream);
 
-  bool file_loaded = false;
+  MonteCarloEngine<PomeranchukProblem, RNG> 
+    engine(wavefunction, coord, cache, measurement,
+           param->move_opt, gen, param->keep_track);
+
+  auto file_loaded = false;
   {
     std::ifstream state_file(state_filename.c_str());
     try {
@@ -259,19 +263,10 @@ int main(int argc, char** argv)
     }
   }
 
-  MonteCarloEngine<PomeranchukProblem, RNG> engine(wavefunction,
-                                                   coord,
-                                                   cache,
-                                                   measurement,
-                                                   param->move_opt,
-                                                   gen,
-                                                   param->keep_track,
-                                                   param->tolerance
-                                                   );
   if (!file_loaded) {
     std::uniform_real_distribution<Real> dist_01(0.0, 1.0);
     for (Integer i = 0; i < param->n_electron; ++i) {
-      Real x = dist_01(gen), y = dist_01(gen);
+      auto x = dist_01(gen), y = dist_01(gen);
       Complex z(param->ell1 * x + param->ell2 * y * ::cos(param->angle),
                 param->ell2 * y * sin(param->angle));
       coord(i) = z * geometry.kappa();
