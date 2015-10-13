@@ -153,6 +153,7 @@ struct PomeranchukReader
 int main(int argc, char** argv)
 {
   auto kDigits = std::numeric_limits<Real>::max_digits10;
+  using RNG = std::mt19937_64;
 
   std::unique_ptr<PomeParam> param = nullptr;
   std::string output_filename;
@@ -202,9 +203,7 @@ int main(int argc, char** argv)
   if (!param) { std::cout << "Failed to read file. Quitting." << std::endl; }
   param->show(std::cout, "");
 
-  using RNG = std::mt19937_64;
-
-  RNG gen;
+  RNG gen(param->random_seed);
 
   Geometry geometry(param->ell1, param->ell2, param->angle);
   CflWavefunction wavefunction(geometry, param->n_electron, param->displacements.data());
@@ -260,17 +259,15 @@ int main(int argc, char** argv)
     }
   }
 
-  wavefunction.generate_theta(coord, cache);
-  wavefunction.generate_slater(coord, cache);
   MonteCarloEngine<PomeranchukProblem, RNG> engine(wavefunction,
-                                              coord,
-                                              cache,
-                                              measurement,
-                                              param->move_opt,
-                                              gen,
-                                              param->keep_track,
-                                              param->tolerance
-                                              );
+                                                   coord,
+                                                   cache,
+                                                   measurement,
+                                                   param->move_opt,
+                                                   gen,
+                                                   param->keep_track,
+                                                   param->tolerance
+                                                   );
   if (!file_loaded) {
     std::uniform_real_distribution<Real> dist_01(0.0, 1.0);
     for (Integer i = 0; i < param->n_electron; ++i) {
@@ -280,10 +277,16 @@ int main(int argc, char** argv)
       coord(i) = z * geometry.kappa();
       coord(i) = geometry.mod_kappa_z(coord(i));
     }
+    wavefunction.generate_theta(coord, cache);
+    wavefunction.generate_slater(coord, cache);
 
     std::cout << "Thermalizing ( " << param->n_thermalize << " steps ) ..." << std::endl;
     engine.run_notrack(param->n_thermalize);
+  } else {
+    wavefunction.generate_theta(coord, cache);
+    wavefunction.generate_slater(coord, cache);
   }
+
 
   std::ofstream state_file(state_filename.c_str(), std::ofstream::trunc | std::ofstream::out);
   state_file.precision(kDigits);
