@@ -6,6 +6,7 @@
 #include <cmath>
 #include <complex>
 #include <array>
+#include <limits>
 
 //! \f$ \vartheta_1(z | \tau) \f$
 template <typename _RealType = double, size_t CacheSize = 128>
@@ -16,13 +17,13 @@ public:
   typedef std::complex<RealType> ComplexType;
   static_assert(std::is_same<RealType, double>::value, "RealType should be double");
 
-  explicit EllipticTheta1(ComplexType tau)
-    : tau_(tau)
+// tolerance: 2 for summing two, 2 for additional.
+  explicit EllipticTheta1(ComplexType tau, 
+                          RealType tolerance = (std::numeric_limits<RealType>::epsilon()*4) )
+    : tau_(tau), tolerance_(tolerance)
   {
     static const ComplexType complex_eye(0.0, 1.0);
     RealType rtau = std::real(tau);
-    //rtau = std::fmod(rtau + ::ceil(fabs(rtau))*2.0 + 1.0, 2.0) - 1.0;
-    //tau_mod2_ = ComplexType(rtau, std::imag(tau_));
 
     ComplexType foo = 0;
     for (size_t i = 0; i < CacheSize; ++i) {
@@ -34,7 +35,6 @@ public:
 
   ComplexType operator()(ComplexType z) const
   {
-    //static const ComplexType I(0.0, 1.0);
     ComplexType theta = 0.0;
     ComplexType two_iz(-2.0 * z.imag(), 2.0 * z.real()); // = 2 I z
 
@@ -45,22 +45,21 @@ public:
       ComplexType foo = cache_two_pi_i_tau_[i];
       z1 += foo + two_iz;
       z2 += foo - two_iz;
-      //ComplexType next_term = (std::exp(z1) - std::exp(z2));
       ComplexType next_term =
         ComplexType(::cos(z1.imag()), ::sin(z1.imag())) * ::exp(z1.real()) -
         ComplexType(::cos(z2.imag()), ::sin(z2.imag())) * ::exp(z2.real());
-      //theta += (i % 2 == 0) ? -next_term : next_term;
       theta += (i % 2) ? next_term : -next_term;
-      if (::fabs(next_term.real()) + ::fabs(next_term.imag()) < 1E-15) { break; } 
-      // faster than std::abs                                                                           
-      //if (std::abs(next_term) < 1E-15) { break; }
+      if (std::abs(next_term.real()) + std::abs(next_term.imag()) < tolerance_) { break; } 
     }
     theta *= overall_factor_;
     return theta;
   }
 
 private:
-  ComplexType tau_, overall_factor_;
+  ComplexType tau_;
+  RealType tolerance_;
+
+  ComplexType overall_factor_;
   std::array<ComplexType, CacheSize> cache_two_pi_i_tau_;
   std::array<ComplexType, CacheSize> cache_exponential_tau_;
   // <- (-1)^n exp(n (n+1) i pi tau)
@@ -88,7 +87,7 @@ public:
 
   ComplexType operator()(int i_pow, ComplexType z) const {
     assert(i_pow >= 0);
-    static const ComplexType I(0, 1);
+    static const ComplexType complex_eye(0.0, 1.0);
     ComplexType theta = 0.0;
     for (size_t i = 0; i < CacheSize; ++i) {
       RealType alpha = RealType(2 * i + 1);
@@ -111,7 +110,7 @@ public:
       theta += next_term;
       if (std::abs(next_term) < 1E-15) { break; }
     }
-    theta *= 2.0 * std::exp(0.25 * M_PI * I);
+    theta *= 2.0 * std::exp(0.25 * M_PI * complex_eye);
     return theta;
   }
 
@@ -130,8 +129,9 @@ public:
   typedef std::complex<RealType> ComplexType;
   static_assert(std::is_same<RealType, double>::value, "RealType should be double");
 
-  explicit EllipticTheta2(ComplexType tau)
-    : tau_(tau)
+  explicit EllipticTheta2(ComplexType tau, 
+                          RealType tolerance = (std::numeric_limits<RealType>::epsilon()*4) )
+    : tau_(tau), tolerance_(tolerance)
   {
     static const ComplexType complex_eye(0.0, 1.0);
     ComplexType foo = 0;
@@ -158,15 +158,16 @@ public:
         ComplexType(::cos(z1.imag()), ::sin(z1.imag())) * ::exp(z1.real()) +
         ComplexType(::cos(z2.imag()), ::sin(z2.imag())) * ::exp(z2.real());
       theta += next_term;
-      if (::fabs(next_term.real()) + ::fabs(next_term.imag()) < 1E-15) { break; } // faster than std::abs
-                                                                                  //if (std::abs(next_term) < 1E-15) { break; }
+      if (std::abs(next_term.real()) + std::abs(next_term.imag()) < tolerance_) { break; }
     }
     theta *= overall_factor_;
     return theta;
   }
 
 private:
-  ComplexType tau_, overall_factor_;
+  ComplexType tau_;
+  RealType tolerance_;
+  ComplexType overall_factor_;
   std::array<ComplexType, CacheSize> cache_two_pi_i_tau_;
   std::array<ComplexType, CacheSize> cache_exponential_tau_;
   // <- (-1)^n exp(n (n+1) i pi tau)
@@ -181,8 +182,9 @@ public:
   typedef std::complex<RealType> ComplexType;
   static_assert(std::is_same<RealType, double>::value, "RealType should be double");
 
-  explicit EllipticTheta3(ComplexType tau)
-    : tau_(tau)
+  explicit EllipticTheta3(ComplexType tau, 
+                          RealType tolerance = (std::numeric_limits<RealType>::epsilon()*4) )
+    : tau_(tau), tolerance_(tolerance)
   {
     static const ComplexType complex_eye(0.0, 1.0);
     ComplexType foo = -M_PI * complex_eye * tau_;
@@ -198,7 +200,7 @@ public:
     ComplexType two_iz(-2.0 * z.imag(), 2.0 * z.real()); // = 2 I z
     ComplexType z1 = 0, z2 = 0;
 
-    for (int i = 1; i < CacheSize; ++i) {
+    for (size_t i = 1; i < CacheSize; ++i) {
       ComplexType foo = cache_two_pi_i_tau_[i];
       z1 += foo + two_iz;
       z2 += foo - two_iz;
@@ -206,14 +208,14 @@ public:
         ComplexType(::cos(z1.imag()), ::sin(z1.imag())) * ::exp(z1.real()) +
         ComplexType(::cos(z2.imag()), ::sin(z2.imag())) * ::exp(z2.real());
       theta += next_term;
-      if (::fabs(next_term.real()) + ::fabs(next_term.imag()) < 1E-15) { break; } // faster than std::abs
-                                                                                  //if (std::abs(next_term) < 1E-15) { break; }
+      if (std::abs(next_term.real()) + std::abs(next_term.imag()) < tolerance_) { break; }
     }
     return theta;
   }
 
 private:
   ComplexType tau_;
+  RealType tolerance_;
   std::array<ComplexType, CacheSize> cache_two_pi_i_tau_;
   std::array<ComplexType, CacheSize> cache_exponential_tau_;
   // <- (-1)^n exp(n (n+1) i pi tau)
@@ -228,8 +230,9 @@ public:
   typedef std::complex<RealType> ComplexType;
   static_assert(std::is_same<RealType, double>::value, "RealType should be double");
 
-  explicit EllipticTheta4(ComplexType tau)
-    : tau_(tau)
+  explicit EllipticTheta4(ComplexType tau, 
+                          RealType tolerance = (std::numeric_limits<RealType>::epsilon()*4) )
+    : tau_(tau), tolerance_(tolerance)
   {
     static const ComplexType complex_eye(0.0, 1.0);
     ComplexType foo = -M_PI * complex_eye * tau_;
@@ -244,7 +247,7 @@ public:
     ComplexType theta = 1.0;
     ComplexType two_iz(-2.0 * z.imag(), 2.0 * z.real()); // = 2 I z
     ComplexType z1 = 0, z2 = 0;
-    for (int i = 1; i < CacheSize; ++i) {
+    for (size_t i = 1; i < CacheSize; ++i) {
       ComplexType foo = cache_two_pi_i_tau_[i];
       z1 += foo + two_iz;
       z2 += foo - two_iz;
@@ -252,14 +255,14 @@ public:
         ComplexType(::cos(z1.imag()), ::sin(z1.imag())) * ::exp(z1.real()) +
         ComplexType(::cos(z2.imag()), ::sin(z2.imag())) * ::exp(z2.real());
       theta += (i % 2) ? -next_term : next_term;
-      if (::fabs(next_term.real()) + ::fabs(next_term.imag()) < 1E-15) { break; } // faster than std::abs
-                                                                                  //if (std::abs(next_term) < 1E-15) { break; }
+      if (std::abs(next_term.real()) + std::abs(next_term.imag()) < tolerance_) { break; }
     }
     return theta;
   }
 
 private:
   ComplexType tau_;
+  RealType tolerance_;
   std::array<ComplexType, CacheSize> cache_two_pi_i_tau_;
   std::array<ComplexType, CacheSize> cache_exponential_tau_;
   // <- (-1)^n exp(n (n+1) i pi tau)
