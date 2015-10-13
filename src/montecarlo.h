@@ -135,5 +135,5 @@ private:
   MonteCarloStat stat_;
 
   RNG & random_generator_;
-  std::uniform_real_distribution<double> real_dist_;
+  std::uniform_real_distribution<RealType> real_dist_;
 };
