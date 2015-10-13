@@ -155,6 +155,8 @@ int main(int argc, char** argv)
   auto kDigits = std::numeric_limits<Real>::max_digits10;
   using RNG = std::mt19937_64;
 
+  // Reading Parameters
+  // ==================
   std::unique_ptr<PomeParam> param = nullptr;
   std::string output_filename;
   std::string state_filename;
@@ -197,30 +199,90 @@ int main(int argc, char** argv)
   catch (TCLAP::ArgException &e) {
     std::cerr << "Arg ERROR" << std::endl;
     std::cerr << e.what() << std::endl;
+    param = nullptr;
+  }
+
+  if (!param) {
+    std::cerr << "Failed to read file. Quitting." << std::endl;
     exit(1);
   }
 
-  if (!param) { std::cout << "Failed to read file. Quitting." << std::endl; }
   param->show(std::cout, "");
 
-  RNG gen(param->random_seed);
+  // Output Streams
+  // ==============
+  std::ios_base::openmode mode = std::ios_base::out | std::ios_base::app;
+  std::ofstream result_stream(output_filename.c_str(), mode);
+  result_stream.precision(kDigits);
+  TableFormatStream result_table_stream(result_stream);
 
+  // Construct Objects
+  // =================
+  RNG gen(param->random_seed);
   Geometry geometry(param->ell1, param->ell2, param->angle);
   CflWavefunction wavefunction(geometry, param->n_electron, param->displacements.data());
   CflCache cache(param->n_electron);
   ParticleCoordinates coord(param->n_electron);
   param->move_opt.radius *= geometry.kappa(); // TODO
-                                              
-  std::ios_base::openmode mode = std::ios_base::out | std::ios_base::app;
+  Measurement measurement(geometry, wavefunction, result_table_stream);
+  MonteCarloEngine<PomeranchukProblem, RNG> 
+    engine(wavefunction, coord, cache, measurement,
+           param->move_opt, gen, param->keep_track);
 
-  std::ofstream result_stream(output_filename.c_str(), mode);
-  result_stream.precision(kDigits);
+  // Read Previous State / Generate
+  // ==============================
+  auto file_loaded = false;
+  {
+    std::ifstream state_file(state_filename.c_str());
+    try {
+      if (state_file) {
+        Real kz_r, kz_i;
+        for (Integer ie = 0; ie < param->n_electron; ++ie) {
+          state_file >> kz_r >> kz_i;
+          coord.coordinates(ie) = Complex(kz_r, kz_i);
+        }
+        state_file >> gen;
+        std::cout << "Continuing..." << std::endl;
+        file_loaded = true;
+      }
+    } catch (std::invalid_argument& e) {
+      std::cout << "Failed reading state file." << std::endl;
+    }
+  }
+
+  if (file_loaded) {
+    wavefunction.generate_theta(coord, cache);
+    wavefunction.generate_slater(coord, cache);
+  } else {
+    std::uniform_real_distribution<Real> dist_01(0.0, 1.0);
+    for (Integer i = 0; i < param->n_electron; ++i) {
+      auto x = dist_01(gen), y = dist_01(gen);
+      Complex z(param->ell1 * x + param->ell2 * y * ::cos(param->angle),
+                param->ell2 * y * sin(param->angle));
+      coord(i) = z * geometry.kappa();
+      coord(i) = geometry.mod_kappa_z(coord(i));
+    }
+    wavefunction.generate_theta(coord, cache);
+    wavefunction.generate_slater(coord, cache);
+
+    std::cout << "Thermalizing ( " << param->n_thermalize << " steps ) ..." << std::endl;
+    engine.run_notrack(param->n_thermalize);
+  }
+
+
+  // Create Output State Stream
+  // ==========================
+  std::ofstream state_file(state_filename.c_str(), std::ofstream::trunc | std::ofstream::out);
+  state_file.precision(kDigits);
+
+
+  // Print Header
+  // ============
   result_stream << "# <Parameters>" << std::endl;
   param->show(result_stream, "#   ");
   result_stream << "#" << std::endl;
   result_stream << "# <Data>" << std::endl;
-  TableFormatStream result_table_stream(result_stream);
-  { // Construct Columns
+  { 
     result_table_stream.add_column("n_measure");
     for (Integer ie = 0; ie < param->n_electron; ++ie) {
       {
@@ -235,57 +297,8 @@ int main(int argc, char** argv)
   }
   result_table_stream.print_header();
 
-  Measurement measurement(geometry, wavefunction, result_table_stream);
-
-  MonteCarloEngine<PomeranchukProblem, RNG> 
-    engine(wavefunction, coord, cache, measurement,
-           param->move_opt, gen, param->keep_track);
-
-  auto file_loaded = false;
-  {
-    std::ifstream state_file(state_filename.c_str());
-    try {
-      if (state_file)
-      {
-        Real kz_r, kz_i;
-        for (Integer ie = 0; ie < param->n_electron; ++ie) {
-          state_file >> kz_r >> kz_i;
-          coord.coordinates(ie) = Complex(kz_r, kz_i);
-        }
-        state_file >> gen;
-        std::cout << "Continuuing..." << std::endl;
-        file_loaded = true;
-      }
-    }
-    catch (std::invalid_argument& e) {
-      std::cout << "Failed reading state file." << std::endl;
-      // pass
-    }
-  }
-
-  if (!file_loaded) {
-    std::uniform_real_distribution<Real> dist_01(0.0, 1.0);
-    for (Integer i = 0; i < param->n_electron; ++i) {
-      auto x = dist_01(gen), y = dist_01(gen);
-      Complex z(param->ell1 * x + param->ell2 * y * ::cos(param->angle),
-                param->ell2 * y * sin(param->angle));
-      coord(i) = z * geometry.kappa();
-      coord(i) = geometry.mod_kappa_z(coord(i));
-    }
-    wavefunction.generate_theta(coord, cache);
-    wavefunction.generate_slater(coord, cache);
-
-    std::cout << "Thermalizing ( " << param->n_thermalize << " steps ) ..." << std::endl;
-    engine.run_notrack(param->n_thermalize);
-  } else {
-    wavefunction.generate_theta(coord, cache);
-    wavefunction.generate_slater(coord, cache);
-  }
-
-
-  std::ofstream state_file(state_filename.c_str(), std::ofstream::trunc | std::ofstream::out);
-  state_file.precision(kDigits);
-
+  // Start Monte Carlo Markov Chain
+  // ==============================
   std::cout << std::fixed << std::setprecision(1);
   for (Integer i_run = 0; i_run < param->n_run; ++i_run) {
     auto start_time = std::chrono::steady_clock::now();
@@ -300,7 +313,6 @@ int main(int argc, char** argv)
       state_file << gen << std::endl;
       state_file.flush();
     }
-
 
     measurement.measure(coord, cache);
     auto end_time = std::chrono::steady_clock::now();
