@@ -72,7 +72,6 @@ public:
     , random_generator_(gen)
     , real_dist_(0.0, 1.0)
   {
-    assert(tolerance > 0);
   }
 
   void step()
